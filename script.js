@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-04-09-04
+// @version      2025-04-09-05
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -14,8 +14,8 @@
 // ==/UserScript==
 
 (async () => {
-let $ = unsafeWindow.$ = (s,e) => (e || document).querySelector?.(s);
-let $$ = unsafeWindow.$$ = (s,e) => [...(e || document).querySelectorAll?.(s)];
+let $ = (s,e) => (e || document).querySelector?.(s);
+let $$ = (s,e) => [...(e || document).querySelectorAll?.(s)];
 let m = unsafeWindow.m = s=>(s[0]=="-"?-1:1)*((s=s.replace("-","").split(":"))[0]*60+ +s[1]);
 let s = unsafeWindow.s = (m,t)=>`${(m?m>0?t?"":"+":"-":"")}${(((m=Math.abs(m))/60|0)+"").padStart(2,0)}:${((m%60)+"").padStart(2,0)}`;
 let numColor = n=>!n?"zero":n>0?"positive":"negative";
