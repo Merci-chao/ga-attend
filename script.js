@@ -1,6 +1,8 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-04-09
+// @version      2025-04-09-01
+// @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
+// @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
 // @match        https://ga.gov.mo/macao-ga-extranet-attend-fe/
 // @match        https://entity-account.safp.gov.mo/zh-hant/login
