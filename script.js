@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-04-09-03
+// @version      2025-04-09-04
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -14,11 +14,11 @@
 // ==/UserScript==
 
 (async () => {
-var $ = (s,e) => (e || document).querySelector?.(s);
-var $$ = (s,e) => [...(e || document).querySelectorAll?.(s)];
-var m = unsafeWindow.m = s=>(s[0]=="-"?-1:1)*((s=s.replace("-","").split(":"))[0]*60+ +s[1]);
-var s = unsafeWindow.s = (m,t)=>`${(m?m>0?t?"":"+":"-":"")}${(((m=Math.abs(m))/60|0)+"").padStart(2,0)}:${((m%60)+"").padStart(2,0)}`;
-var numColor = n=>!n?"zero":n>0?"positive":"negative";
+let $ = unsafeWindow.$ = (s,e) => (e || document).querySelector?.(s);
+let $$ = unsafeWindow.$$ = (s,e) => [...(e || document).querySelectorAll?.(s)];
+let m = unsafeWindow.m = s=>(s[0]=="-"?-1:1)*((s=s.replace("-","").split(":"))[0]*60+ +s[1]);
+let s = unsafeWindow.s = (m,t)=>`${(m?m>0?t?"":"+":"-":"")}${(((m=Math.abs(m))/60|0)+"").padStart(2,0)}:${((m%60)+"").padStart(2,0)}`;
+let numColor = n=>!n?"zero":n>0?"positive":"negative";
 
 switch (location.href) {
 	case "https://entity-account.safp.gov.mo/zh-hant/login":
@@ -54,8 +54,8 @@ let func = unsafeWindow.reCal = async () => {
 
 $$(".cal").forEach(e => e.remove());
 
-var hasWorkingDays, today;
-var cells = $$(".time-tags").slice(1,6).reverse().map((cell, day) => {
+let hasWorkingDays, today;
+let cells = $$(".time-tags").slice(1,6).reverse().map((cell, day) => {
 	let halfOff = !!$$("div.time-tag", cell).find(v => v.textContent.includes("除夕"));
 	let workTime = m(day ? "7:15" : "7:00");
 	return {
@@ -73,7 +73,7 @@ console.log(cells);
 let now = new Date();
 now = {month: now.getMonth() + 1, date: now.getDate(), day: new Intl.DateTimeFormat("zh", {weekday: "narrow"}).format(now)};
 cells.forEach((obj, day) => {
-	var {cell, times, offTime, maxExtra} = obj;
+	let {cell, times, offTime, maxExtra} = obj;
 	if (!times.length)
 		return;
 
@@ -83,10 +83,10 @@ cells.forEach((obj, day) => {
 			today = obj;
 	}
 
-	var time = 0;
+	let time = 0;
 
-	var morning = times.filter(t => t < m("13:00"));
-	var noon = times.filter(t => m("13:00") <= t && t <= m("15:00"));
+	let morning = times.filter(t => t < m("13:00"));
+	let noon = times.filter(t => m("13:00") <= t && t <= m("15:00"));
 
 	if (noon.length > 2) {
 		cell.style.color = "red";
@@ -107,10 +107,9 @@ cells.forEach((obj, day) => {
 
 	obj.bal = time;
 
-	var balCell = $(".col_5", cell.closest("tr"));
-	var balText = $(".vxe-cell", balCell).textContent.trim().replace("h", ":").replace("m", "");
-	if (balText != "00:00")
-		balText = s(m(balText) - obj.workTime);
+	let balCell = $(".col_5", cell.closest("tr"));
+	let balText = $(".vxe-cell", balCell).textContent.trim().replace("h", ":").replace("m", "");
+	balText = s(m(balText) - obj.workTime);
 	let error;
 	let expectBalText = s(time);
 	if (balText != expectBalText && (obj != today || times.at(-1) >= obj.minOffTime)) {
@@ -120,14 +119,14 @@ cells.forEach((obj, day) => {
 	balCell.insertAdjacentHTML("beforeend", `<div class="cal dailyBal ${numColor(time)} ${error}">${balText}</div>`);
 });
 
-var totalBal = $$(".dailyBal").map(elt => m(elt.textContent)).reduce((a,b)=>a+b,0);
+let totalBal = $$(".dailyBal").map(elt => m(elt.textContent)).reduce((a,b)=>a+b,0);
 
 if (today && today.times.at(-1) < today.minOffTime) {
-	var maxEarlyTime = Math.min(today.bal + m("1:00"), today.offTime - today.minOffTime, totalBal);
+	let maxEarlyTime = Math.min(today.bal + m("1:00"), today.offTime - today.minOffTime, totalBal);
 	maxEarlyTime = Math.max(maxEarlyTime, today.offTime - today.maxOffTime, today.bal - today.maxExtra);
 
-	var suggestedOffTime = today.offTime - maxEarlyTime;
-	var minus1HrOff = today.lastWorkingDay ? suggestedOffTime : Math.max(today.offTime - today.bal - m("1:00"), today.minOffTime);
+	let suggestedOffTime = today.offTime - maxEarlyTime;
+	let minus1HrOff = today.lastWorkingDay ? suggestedOffTime : Math.max(today.offTime - today.bal - m("1:00"), today.minOffTime);
 
 	totalBal -= maxEarlyTime;
 	$(".addBox1, .addBox", today.cell).insertAdjacentHTML("beforebegin", `<span class="cal"><b class="suggestedOffTime ${numColor(maxEarlyTime)}">${s(suggestedOffTime, true)}</b> <b class="minOffTime">(<u>${s(minus1HrOff, true)}</u>)</b></span>`);
