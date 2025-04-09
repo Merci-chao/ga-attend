@@ -157,7 +157,7 @@ setInterval(() => {
 			return true;
 		}
 	});
-}, 500);
+}, 250);
 
 document.body.insertAdjacentHTML("beforeend", `<style>
 .head {
