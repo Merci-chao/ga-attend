@@ -37,7 +37,7 @@ switch (location.href) {
 		}
 		return;
 	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/index":
-	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/403?lang=zh-MO":
+	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/403":
 		location = "https://ga.gov.mo/macao-ga-extranet-attend-fe/?#/AttendPage?lang=zh";
 		return;
 }
