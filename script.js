@@ -172,9 +172,9 @@ unsafeWindow.reCal = async () => {
 	let summaryRow = $(".vxe-body--row:last-child");
 	$(".col_5", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal totalBal ${numColor(totalBal)}">${s(totalBal)}</div>`);
 	if (!todayAbnormalNoon) {
-		$(".col_4", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal tempDailyBal temp ${numColor(tempTotalBal)}">${s(tempTotalBal)}</div>`);
+		$(".col_4", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal tempTotalBal temp ${numColor(tempTotalBal)}">${s(tempTotalBal)}</div>`);
 		//if (tempTotalBal == totalBal)
-		//	$(".tempDailyBal").hidden = true;
+		//	$(".tempTotalBal").hidden = true;
 	}
 };
 
@@ -338,18 +338,27 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 	margin: 0 !important;
 }
 
-.dailyBal, .tempDailyBal {
+.dailyBal, .tempDailyBal,
+.totalBal, .tempTotalBal {
 	display: inline-block;
 	padding: 0 .25em;
 }
 
 @media (orientation: portrait) {
+	.temp:not(.error) {
+		outline: 1px dashed;
+	}
+
 	.head {
 		padding: .1em 0 !important;
 
 		span,
 		p {
 			font-size: 1rem !important
+		}
+
+		.el-icon-arrow-left + * {
+			vertical-align: text-bottom;
 		}
 	}
 
@@ -542,9 +551,11 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 			}
 		}
 
-		.dailyBal, .tempDailyBal {
+		.suggestedOffTime,
+		.dailyBal, .tempDailyBal,
+		.totalBal, .tempTotalBal {
 			font-size: .8rem;
-			padding: 0 .15em;
+			padding: .15em .25em;
 			line-height: 1.25;
 		}
 
