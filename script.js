@@ -554,7 +554,6 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 		.suggestedOffTime,
 		.dailyBal, .tempDailyBal,
 		.totalBal, .tempTotalBal {
-			font-size: .8rem;
 			padding: .15em .25em;
 			line-height: 1.25;
 		}
