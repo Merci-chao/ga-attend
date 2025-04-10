@@ -226,8 +226,9 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 }
 
 .suggestedOffTime {
-	padding: .4em .4444rem;
 	line-height: 2.5;
+	margin: 0 .3em;
+	padding: .15em .25em;
 }
 
 .temp:not(.error) {
