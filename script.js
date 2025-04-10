@@ -556,6 +556,7 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 		.totalBal, .tempTotalBal {
 			padding: .15em .25em;
 			line-height: 1.25;
+			font-weight: normal;
 		}
 
 		.col_7 {
