@@ -165,7 +165,7 @@ unsafeWindow.reCal = () => {
 	let sum = type => $$(type).map(e => m(e.textContent)).reduce((a,b)=>a+b,0);
 	let totalBal = sum(".dailyBal");
 	let tempTotalBal = sum(".tempDailyBal");
-console.log(document.querySelector(".tempDailyBal.error"), todayWorking && !$(".tempDailyBal.error"))
+
 	if (todayWorking && !$(".tempDailyBal.error")) {
 		let {bal, offTime, minOffTime, maxOffTime, maxExtra, cell, row, lastWorkingDay} = today;
 		let maxEarlyTime = min(bal + m("1:00"), offTime - minOffTime, tempTotalBal);
