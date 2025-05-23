@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-04-10
+// @version      2025-05-23
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -16,9 +16,12 @@
 (async () => {
 let $ = (s,e) => (e || document).querySelector?.(s);
 let $$ = (s,e) => [...(e || document).querySelectorAll?.(s)];
+let pad = n => (n + "").padStart(2,0);
 let m = unsafeWindow.m = s=>(s[0]=="-"?-1:1)*((s=s.replace("-","").split(":"))[0]*60+ +s[1]);
-let s = unsafeWindow.s = (m,t)=>isNaN(m)?m:`${(m?m>0?t?"":"+":"-":"")}${(((m=Math.abs(m))/60|0)+"").padStart(2,0)}:${((m%60)+"").padStart(2,0)}`;
-let numColor = n=>!n?"zero":n>0?"positive":"negative";
+let s = unsafeWindow.s = (m,t)=>isNaN(m)?m:`${(m?m>0?t?"":"+":"-":"")}${pad((m=Math.abs(m))/60|0)}:${pad(m%60)}`;
+let color = n=>!n?"zero":n>0?"positive":"negative";
+let {min, max} = Math;
+let now = new Date();
 
 switch (location.href) {
 	case "https://entity-account.safp.gov.mo/zh-hant/login":
@@ -44,13 +47,14 @@ switch (location.href) {
 		return;
 }
 
-document.addEventListener("visibilitychange", e => {
+//if (false)
+addEventListener("visibilitychange", e => {
 	if (document.visibilityState == "visible") {
 		let table = $(".step_third_table");
 		if (!table) return;
 		table.style.height = table.getBoundingClientRect().height + "px";
 		table.scrollLeft = 0;
-		document.body.scrollTop = document.documentElement.scrollTop = 0;
+		document.documentElement.scrollTop = 0;
 		let tbody = $(".vxe-table--body tbody", table);
 		let {innerHTML} = tbody;
 		$(".newPage").click();
@@ -60,121 +64,128 @@ document.addEventListener("visibilitychange", e => {
 	}
 }, true);
 
-unsafeWindow.reCal = async () => {
+unsafeWindow.reCal = () => {
+	let todayStr = `${pad(now.getMonth()+1)}-${pad(now.getDate())}（${new Intl.DateTimeFormat("zh", {weekday: "narrow"}).format(now)}）`;
+
 	$$(".cal").forEach(e => e.remove());
 
-	let hasWorkingDays, today, todayAbnormalNoon, todayWorking;
+	let hasWorkingDays, today, todayWorking;
 	let cells = $$(".time-tags").slice(1,6).reverse().map((cell, day) => {
-		let halfOff = !!$$("div.time-tag", cell).find(v => v.textContent.includes("除夕"));
+		let timeTags = $$("div.time-tag", cell);
+		let halfOff = timeTags.some(v => v.textContent.includes("除夕"));
 		let workTime = m(day ? "7:15" : "7:00");
+		let explainedTimes = timeTags.flatMap(t => ($("[role=tooltip]", t.closest("span.time-tag")).textContent.match(/^\s*(\d+:\d+)\s*—\s*(\d+:\d+)\s*$/) || []).slice(1).map(m));
+		let payback = timeTags.flatMap(c => (c.textContent.trim().match(/^-\d+h\d+m$/) || []).map(v => m(v.replace(/m/, "").replace(/h/, ":")))).reduce((a,b)=>a+b,0);
+		let times = timeTags.flatMap(c => (c.textContent.trim().match(/^\d+:\d+$/) || []).map(m));
+		times = [...times.filter(v => !explainedTimes.includes(v)), ...explainedTimes.filter(v => !times.includes(v))].sort((a,b)=>a-b);
 		return {
 			cell,
-			times: $$("div.time-tag", cell).map(c => m(c.textContent.trim().match(/\d+:\d+|$/)[0])).filter(v => v),
+			row: cell.closest("tr"),
+			times,
 			offTime:  m(halfOff ? "13:00" : day ? "17:45" : "17:30"),
 			minOffTime: m(halfOff ? "13:00" : "17:00"),
 			maxOffTime: m(halfOff ? "13:30" : "19:00"),
 			workTime,
+			halfOff,
+			payback,
+			explainedTimes,
 			maxExtra: halfOff ? m("1:00") : m("9:00") - workTime,
-			lastWorkingDay: !hasWorkingDays && !$$("div.time-tag", cell).find(v => !v.textContent.trim().match(/\d+:\d+|除夕/)) && (hasWorkingDays = true),
+			lastWorkingDay: !hasWorkingDays && !timeTags.find(t => $("[role=tooltip]", t.closest("span.time-tag")).textContent.match(/\d+-\d+\s*—\s*\d+-\d+/)) && (hasWorkingDays = true),
 		}
 	});
 	console.log(cells);
-	let now = new Date();
-	now = {month: now.getMonth() + 1, date: now.getDate(), day: new Intl.DateTimeFormat("zh", {weekday: "narrow"}).format(now)};
+
 	cells.forEach((obj, day) => {
-		let {cell, times, offTime, maxExtra} = obj;
+		let {row, times, offTime, maxExtra, halfOff, payback} = obj;
 		if (!times.length)
 			return;
 
-		if (!today) {
-			let [, month, date, day] = $(".col_2", cell.closest("tr")).textContent.trim().match(/(\d+)-(\d+)（(.)）/);
-			if (+month == now.month && +date == now.date && day == now.day)
-				today = obj;
+		let working;
+		if (!today && ($(".col_2", row).textContent.trim() == todayStr || row.matches(".today"))) {
+			today = obj;
+			if (working = times.length % 2 || times.at(-1) < obj.minOffTime)
+				todayWorking = true;
 		}
-
-		let time = 0;
 
 		let morning = times.filter(t => t < m("13:00"));
 		let noon = times.filter(t => m("13:00") <= t && t <= m("15:00"));
+		let afternoon = times.filter(t => t > m("15:00"));
+		let time = 0;
 
-		noon.forEach((t, i) => {
-			time += i || !morning.length && noon.length == 1 ? m("14:30") - t : t - m("13:00");
-		});
+		if (morning.length) {
+			if (!(morning.length % 2))
+				noon.shift();
+			if (noon.length > 2 && noon.length % 2)
+				noon.pop();
 
-		time = Math.min(30, time);
+			if (noon.length < 2)
+				time = noon[0] - m("13:00") || 0;
+			else {
+				let ranges = [];
+				for (let i = 0; i < noon.length; i += 2)
+					ranges.push(noon[i + 1] - noon[i]);
+				ranges.sort((a,b)=>b-a).forEach((r, i) => {
+					if (!i)
+						time = m("1:30") - max(r, m("1:00"));
+					else
+						time -= r;
+				});
+			}
+		} else if (noon.length)
+			time = m("14:30") - noon[0];
 
-		times.filter(t => t <= m("10:00")).slice(0,1).forEach(t => time += m("9:00") - Math.max(t, m("8:30")));
+		time = min(30, time);
 
-		times.filter(t => m("17:00") <= t).slice(-1).forEach(t => time += Math.min(t, m("19:00")) - offTime);
+		morning.filter(t => t <= m("10:00")).slice(0,1).forEach(t => time += m("9:00") - max(t, m("8:30")));
 
-		time = Math.min(maxExtra, time);
+		if (!working)
+			afternoon.filter(t => m("17:00") <= t).slice(-1).forEach(t => time += min(t, m("19:00")) - offTime);
 
-		obj.bal = time;
+		obj.bal = time = min(maxExtra, time) + payback;
 
-		let row = cell.closest("tr");
 		let balCell = $(".col_5", row);
 		let balText = $(".vxe-cell", balCell).textContent.trim().replace("h", ":").replace("m", "");
-		let expectedBalText = s(time);
-		let abnormalNoon = noon.length > 2;
-		let working = obj == today && times.at(-1) < obj.minOffTime;
 		let bal = m(balText) - obj.workTime;
-
-		if (working)
-			todayWorking = true;
+		let tempBalText = s(time);
 
 		balText = s(bal);
 
-		$(".col_4", row).insertAdjacentHTML("beforeend", `<div class="cal tempDailyBal temp ${numColor(time)}">${expectedBalText}</div>`);
+		$(".col_4", row).insertAdjacentHTML("beforeend", `<div class="cal tempDailyBal temp ${color(time)}">${tempBalText}</div>`);
 		let tempBalElt = $(".tempDailyBal", row);
 
-		let diff = balText != expectedBalText;
-
-		if (abnormalNoon) {
-			tempBalElt.classList.remove("negative","positive","zero");
-			tempBalElt.textContent = working ? "異常午休" : balText;
-			if (working) {
-				tempBalElt.classList.add("error");
-				todayAbnormalNoon = true;
-			} else {
-				diff = false;
-				tempBalElt.classList.add(numColor(bal));
-			}
-		}
+		let diff = balText != tempBalText;
 
 		if (!working) {
 			if (diff)
 				tempBalElt.classList.add("error");
-			balCell.insertAdjacentHTML("beforeend", `<div class="cal dailyBal ${numColor(bal)}" ${working ? "hidden" : ""}>${balText}</div>`);
+			balCell.insertAdjacentHTML("beforeend", `<div class="cal dailyBal ${color(bal)}" ${working ? "hidden" : ""}>${balText}</div>`);
 		}
 	});
 
-	let sum = type => $$(type).map(elt => m(elt.textContent)).reduce((a,b)=>a+b,0);
+	let sum = type => $$(type).map(e => m(e.textContent)).reduce((a,b)=>a+b,0);
 	let totalBal = sum(".dailyBal");
 	let tempTotalBal = sum(".tempDailyBal");
+console.log(document.querySelector(".tempDailyBal.error"), todayWorking && !$(".tempDailyBal.error"))
+	if (todayWorking && !$(".tempDailyBal.error")) {
+		let {bal, offTime, minOffTime, maxOffTime, maxExtra, cell, row, lastWorkingDay} = today;
+		let maxEarlyTime = min(bal + m("1:00"), offTime - minOffTime, tempTotalBal);
+		maxEarlyTime = max(maxEarlyTime, offTime - maxOffTime, bal - maxExtra);
+		let suggestedOffTime = offTime - maxEarlyTime;
 
-	if (todayWorking && !todayAbnormalNoon) {
-		let maxEarlyTime = Math.min(today.bal + m("1:00"), today.offTime - today.minOffTime, tempTotalBal);
-		maxEarlyTime = Math.max(maxEarlyTime, today.offTime - today.maxOffTime, today.bal - today.maxExtra);
-
-		let suggestedOffTime = today.offTime - maxEarlyTime;
-		let minus1HrOff = today.lastWorkingDay ? suggestedOffTime : Math.max(today.offTime - today.bal - m("1:00"), today.minOffTime);
+		let minus1HrOff = lastWorkingDay ? suggestedOffTime : max(offTime - bal - m("1:00"), minOffTime);
 
 		tempTotalBal -= maxEarlyTime;
-		$(".addBox1, .addBox", today.cell).insertAdjacentHTML("beforebegin", `<span class="cal"><b class="suggestedOffTime temp ${numColor(maxEarlyTime)}">${s(suggestedOffTime, true)}</b> <b class="minOffTime">(<u>${s(minus1HrOff, true)}</u>)</b></span>`);
-		let row = today.cell.closest("tr");
+		$(".addBox1, .addBox", cell).insertAdjacentHTML("beforebegin", `<span class="cal"><b class="suggestedOffTime temp ${color(maxEarlyTime)}">${s(suggestedOffTime, true)}</b> <b class="minOffTime">(<u>${s(minus1HrOff, true)}</u>)</b></span>`);
 		let balCell = $(".tempDailyBal", row);
-		balCell.textContent = s(today.bal - maxEarlyTime);
+		balCell.textContent = s(bal - maxEarlyTime);
 		balCell.classList.remove("negative","positive","zero");
-		balCell.hidden = false;
-		balCell.classList.add(numColor(today.bal - maxEarlyTime));
+		balCell.classList.add(color(bal - maxEarlyTime));
 	}
 
-	let summaryRow = $(".vxe-body--row:last-child");
-	$(".col_5", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal totalBal ${numColor(totalBal)}">${s(totalBal)}</div>`);
-	if (!todayAbnormalNoon) {
-		$(".col_4", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal tempTotalBal temp ${numColor(tempTotalBal)}">${s(tempTotalBal)}</div>`);
-		//if (tempTotalBal == totalBal)
-		//	$(".tempTotalBal").hidden = true;
+	if (cells.some(obj => obj.times.length)) {
+		let summaryRow = $(".vxe-body--row:last-child");
+		$(".col_5", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal totalBal ${color(totalBal)}">${s(totalBal)}</div>`);
+		$(".col_4", summaryRow).insertAdjacentHTML("beforeend", `<div class="cal tempTotalBal temp ${color(tempTotalBal)}">${s(tempTotalBal)}</div>`);
 	}
 };
 
@@ -523,6 +534,10 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 				font-size: .9rem !important;
 			}
 
+			.time-tag:not(.fisrtType) {
+				text-wrap: balance;
+			}
+
 			.time-tag.firstType {
 				line-height: 1;
 			}
@@ -557,6 +572,15 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 			padding: .15em .25em;
 			line-height: 1.25;
 			font-weight: normal;
+		}
+
+		.suggestedOffTime {
+			margin-left: -.25em;
+		}
+
+		.suggestedOffTime,
+		.minOffTime {
+			font-size: inherit;
 		}
 
 		.col_7 {
@@ -615,17 +639,6 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 		* {
 			margin: 0;
 		}
-	}
-
-	.suggestedOffTime,
-	.minOffTime {
-		font-size: inherit;
-	}
-
-	.suggestedOffTime {
-		padding: 0 .15em;
-		margin-left: -.15em;
-		line-height: 1;
 	}
 }
 </style>`);
