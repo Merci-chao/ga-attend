@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-05-23
+// @version      2025-05-26
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -71,12 +71,12 @@ unsafeWindow.reCal = () => {
 
 	let hasWorkingDays, today, todayWorking;
 	let cells = $$(".time-tags").slice(1,6).reverse().map((cell, day) => {
-		let timeTags = $$("div.time-tag", cell);
-		let halfOff = timeTags.some(v => v.textContent.includes("除夕"));
+		let halfOff = false;
+		let timeTags = $$("div.time-tag", cell).filter(v => !v.textContent.includes("除夕") || !(halfOff = true));
 		let workTime = m(day ? "7:15" : "7:00");
 		let explainedTimes = timeTags.flatMap(t => ($("[role=tooltip]", t.closest("span.time-tag")).textContent.match(/^\s*(\d+:\d+)\s*—\s*(\d+:\d+)\s*$/) || []).slice(1).map(m));
 		let payback = timeTags.flatMap(c => (c.textContent.trim().match(/^-\d+h\d+m$/) || []).map(v => m(v.replace(/m/, "").replace(/h/, ":")))).reduce((a,b)=>a+b,0);
-		let times = timeTags.flatMap(c => (c.textContent.trim().match(/^\d+:\d+$/) || []).map(m));
+		let times = timeTags.flatMap(c => (c.textContent.trim().match(/^\+?\d+:\d+$/) || []).map(m));
 		times = [...times.filter(v => !explainedTimes.includes(v)), ...explainedTimes.filter(v => !times.includes(v))].sort((a,b)=>a-b);
 		return {
 			cell,
