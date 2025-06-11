@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-05-26
+// @version      2025-06-11
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -209,6 +209,7 @@ let interval = setInterval(() => {
 		table.style.height = "";
 		table.classList.remove("reloading");
 	}, true);
+	addStyle();
 }, 50);
 
 setInterval(() => {
@@ -225,6 +226,7 @@ setInterval(() => {
 	});
 }, 250);
 
+function addStyle() {
 document.body.insertAdjacentHTML("beforeend", `<style>
 .head {
 	height: auto !important;
@@ -642,4 +644,5 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 	}
 }
 </style>`);
+}
 })();
