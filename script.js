@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-06-11
+// @version      2025-06-25
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -197,8 +197,9 @@ let interval = setInterval(() => {
 		if (t.matches(".reloading"))
 			location.reload();
 	}, true);
-	t.addEventListener("DOMNodeInserted", e => {
-		if (!$(".sums", e.target)) return;
+
+	new MutationObserver(list => list.some(mutation => mutation.type == "childList" && [...mutation.addedNodes].some(node => {
+		if (!$(".sums", node)) return;
 		let table = $(".step_third_table");
 		if (table.matches(".placingFakeRows")) {
 			table.classList.remove("placingFakeRows");
@@ -208,7 +209,9 @@ let interval = setInterval(() => {
 		reCal();
 		table.style.height = "";
 		table.classList.remove("reloading");
-	}, true);
+		console.debug("table reload");
+		return true;
+	}))).observe(t, {childList: true, subtree: true});
 	addStyle();
 }, 50);
 
