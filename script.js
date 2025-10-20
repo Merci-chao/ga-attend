@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-06-25
+// @version      2025-10-20
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -42,7 +42,7 @@ switch (location.href) {
 		return;
 	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/index":
 	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/403":
-		location = "#/AttendPage?lang=zh";
+		location = "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/AttendPage?lang=zh";
 		location.reload();
 		return;
 }
@@ -166,7 +166,7 @@ unsafeWindow.reCal = () => {
 	let totalBal = sum(".dailyBal");
 	let tempTotalBal = sum(".tempDailyBal");
 
-	if (todayWorking && !$(".tempDailyBal.error")) {
+	if (todayWorking) {
 		let {bal, offTime, minOffTime, maxOffTime, maxExtra, cell, row, lastWorkingDay} = today;
 		let maxEarlyTime = min(bal + m("1:00"), offTime - minOffTime, tempTotalBal);
 		maxEarlyTime = max(maxEarlyTime, offTime - maxOffTime, bal - maxExtra);
@@ -175,7 +175,7 @@ unsafeWindow.reCal = () => {
 		let minus1HrOff = lastWorkingDay ? suggestedOffTime : max(offTime - bal - m("1:00"), minOffTime);
 
 		tempTotalBal -= maxEarlyTime;
-		$(".addBox1, .addBox", cell).insertAdjacentHTML("beforebegin", `<span class="cal"><b class="suggestedOffTime temp ${color(maxEarlyTime)}">${s(suggestedOffTime, true)}</b> <b class="minOffTime">(<u>${s(minus1HrOff, true)}</u>)</b></span>`);
+		$(".addBox1, .addBox", cell).insertAdjacentHTML("beforebegin", `<span class="cal"><b class="suggestedOffTime temp ${color(maxEarlyTime)} ${$(".tempDailyBal.error") ? "error" : ""}">${s(suggestedOffTime, true)}</b> <b class="minOffTime">(<u>${s(minus1HrOff, true)}</u>)</b></span>`);
 		let balCell = $(".tempDailyBal", row);
 		balCell.textContent = s(bal - maxEarlyTime);
 		balCell.classList.remove("negative","positive","zero");
@@ -361,6 +361,14 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 }
 
 @media (orientation: portrait) {
+	body {
+		padding-top: 0 !important;
+	}
+
+	#iframeHeader {
+		display: none !important;
+	}
+
 	.temp:not(.error) {
 		outline: 1px dashed;
 	}
