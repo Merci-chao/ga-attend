@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-10-20
+// @version      2025-10-22
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -42,7 +42,7 @@ switch (location.href) {
 		return;
 	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/index":
 	case "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/403":
-		location = "https://ga.gov.mo/macao-ga-extranet-attend-fe/#/AttendPage?lang=zh";
+		location.href = "#/AttendPage?lang=zh-MO";
 		location.reload();
 		return;
 }
