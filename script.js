@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-10-22
+// @version      2025-12-14
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -57,7 +57,7 @@ addEventListener("visibilitychange", e => {
 		document.documentElement.scrollTop = 0;
 		let tbody = $(".vxe-table--body tbody", table);
 		let {innerHTML} = tbody;
-		$(".newPage").click();
+		$(".refresh-btn").click();
 		table.classList.add("reloading", "placingFakeRows");
 		tbody.innerHTML = innerHTML;
 		[...tbody.children].forEach(r => r.classList.add("fakeRow"));
@@ -193,7 +193,7 @@ let interval = setInterval(() => {
 	let t = $(".step_third_table");
 	if (!t) return;
 	clearInterval(interval);
-	$(".newPage").addEventListener("click", e => {
+	$(".refresh-btn")?.addEventListener("click", e => {
 		if (t.matches(".reloading"))
 			location.reload();
 	}, true);
@@ -210,6 +210,7 @@ let interval = setInterval(() => {
 		table.style.height = "";
 		table.classList.remove("reloading");
 		console.debug("table reload");
+		healthCheck();
 		return true;
 	}))).observe(t, {childList: true, subtree: true});
 	addStyle();
@@ -228,6 +229,50 @@ setInterval(() => {
 		}
 	});
 }, 250);
+
+let healthCheckDone;
+function healthCheck() {
+if (healthCheckDone)
+	return;
+healthCheckDone = true;
+`
+.refresh-btn
+#iframeHeader
+.head
+.el-icon-arrow-left
+.topBox
+.users
+.date-range-picker
+.el-date-editor
+.el-date-editor--daterange
+.el-range-input
+.el-input__icon
+.attendance-top
+.view-item
+.view-label
+.view-text
+.im
+.iBx
+.table-box
+.attendance-table .vxe-table
+.body--wrapper
+.vxe-table--header-border-line
+.vxe-header--row
+.vxe-body--row
+.vxe-header--row .col_2 .no-conversion-dateTxt
+.vxe-header--row .col_7
+.vxe-body--column
+.vxe-cell
+.vxe-table--header
+.vxe-table--body
+.time-tags
+.attendance-table .topBox .users .one
+.attendance-table .topBox .users .back-week-btn
+.right-box
+.tBox
+`.split("\n").forEach(v => (v = v.trim()) && !$(v) && console.error(`element not found: ${v}`));
+console.error("health check done");
+}
 
 function addStyle() {
 document.body.insertAdjacentHTML("beforeend", `<style>
@@ -277,7 +322,7 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 	color: white;
 }
 
-.tableBox {
+.table-box {
 	display: flex;
 	flex-direction: column;
 	padding: 0 !important;
@@ -332,12 +377,12 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 	height: auto !important;
 }
 
-.rightBox,
-.rightBox li {
+.right-box,
+.right-box li {
 	gap: .5em;
 }
 
-.rightBox :is(li, i) {
+.right-box :is(li, i) {
 	margin: 0 !important;
 }
 
@@ -473,11 +518,11 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 		margin: 0 !important;
 	}
 
-	.tableBox {
+	.table-box {
 		gap: .5em;
 	}
 
-	.attendance-table[data-v-9a361286] .vxe-table {
+	.attendance-table .vxe-table {
 		width: auto !important;
 	}
 
@@ -557,7 +602,9 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 		}
 
 		.col_2 {
-			span {
+			width: 4em;
+
+			.no-conversion-dateTxt {
 				font-size: .7rem;
 				white-space: normal;
 				display: flex;
@@ -617,7 +664,7 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 		}
 	}
 
-	.attendance-table .topBox .users[data-v-9a361286] {
+	.attendance-table .topBox .users[class] {
 		width: auto !important;
 
 		.one {
@@ -625,12 +672,12 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 			max-width: none !important;
 		}
 
-		.backWeek {
+		.back-week-btn {
 			order: 2;
 		}
 	}
 
-	.rightBox {
+	.right-box {
 		order: 2;
 		width: auto !important;
 
