@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         出勤紀錄
-// @version      2025-12-14
+// @version      2026-07-10
 // @updateURL    https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @downloadURL  https://raw.githubusercontent.com/Merci-chao/ga-attend/refs/heads/main/script.js
 // @run-at       document-start
@@ -14,8 +14,8 @@
 // ==/UserScript==
 
 (async () => {
-let $ = (s,e) => (e || document).querySelector?.(s);
-let $$ = (s,e) => [...(e || document).querySelectorAll?.(s)];
+let $ = (s,e=document) => e.querySelector?.(s);
+let $$ = (s,e=document) => [...e.querySelectorAll?.(s)];
 let pad = n => (n + "").padStart(2,0);
 let m = unsafeWindow.m = s=>(s[0]=="-"?-1:1)*((s=s.replace("-","").split(":"))[0]*60+ +s[1]);
 let s = unsafeWindow.s = (m,t)=>isNaN(m)?m:`${(m?m>0?t?"":"+":"-":"")}${pad((m=Math.abs(m))/60|0)}:${pad(m%60)}`;
@@ -74,7 +74,7 @@ unsafeWindow.reCal = () => {
 		let halfOff = false;
 		let timeTags = $$("div.time-tag", cell).filter(v => !v.textContent.includes("除夕") || !(halfOff = true));
 		let workTime = m(day ? "7:15" : "7:00");
-		let explainedTimes = timeTags.flatMap(t => ($("[role=tooltip]", t.closest("span.time-tag")).textContent.match(/^\s*(\d+:\d+)\s*—\s*(\d+:\d+)\s*$/) || []).slice(1).map(m));
+		let explainedTimes = timeTags.flatMap(t => ($("[role=tooltip]", t.closest("span.time-tag") || t.closest("div.time-tag"))?.textContent.match(/^\s*(\d+:\d+)\s*—\s*(\d+:\d+)\s*$/) || []).slice(1).map(m));
 		let payback = timeTags.flatMap(c => (c.textContent.trim().match(/^-\d+h\d+m$/) || []).map(v => m(v.replace(/m/, "").replace(/h/, ":")))).reduce((a,b)=>a+b,0);
 		let times = timeTags.flatMap(c => (c.textContent.trim().match(/^\+?\d+:\d+$/) || []).map(m));
 		times = [...times.filter(v => !explainedTimes.includes(v)), ...explainedTimes.filter(v => !times.includes(v))].sort((a,b)=>a-b);
@@ -90,7 +90,7 @@ unsafeWindow.reCal = () => {
 			payback,
 			explainedTimes,
 			maxExtra: halfOff ? m("1:00") : m("9:00") - workTime,
-			lastWorkingDay: !hasWorkingDays && !timeTags.find(t => $("[role=tooltip]", t.closest("span.time-tag")).textContent.match(/\d+-\d+\s*—\s*\d+-\d+/)) && (hasWorkingDays = true),
+			lastWorkingDay: !hasWorkingDays && !timeTags.find(t => $("[role=tooltip]", t.closest("span.time-tag") || t.closest("div.time-tag"))?.textContent.match(/\d+-\d+\s*—\s*\d+-\d+/)) && (hasWorkingDays = true),
 		}
 	});
 	console.log(cells);
@@ -666,10 +666,11 @@ document.body.insertAdjacentHTML("beforeend", `<style>
 
 	.attendance-table .topBox .users[class] {
 		width: auto !important;
+		row-gap: 0;
+  		line-height: 1em;
 
 		.one {
-			display: flex;
-			max-width: none !important;
+			visibility: collapse;
 		}
 
 		.back-week-btn {
